@@ -25,8 +25,7 @@ export default function PromissoriasList() {
   const [searchParams] = useSearchParams();
   const [filters, setFilters] = useState(() => {
     const status = searchParams.get('status') ?? '';
-    const vencidas = searchParams.get('vencidas') === '1';
-    return { status, cliente_id: '', vencidas, proximas_vencimento: false, dias: 3 };
+    return { status, cliente_id: '', vencimento: '', sort_by: 'cliente_nome', sort_order: 'asc' };
   });
   const [deletingId, setDeletingId] = useState(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
@@ -38,13 +37,12 @@ export default function PromissoriasList() {
     setLoading(true);
     setError('');
     try {
-      const params = { per_page: 15, page };
+      const params = { per_page: 15, page, sort_by: filters.sort_by, sort_order: filters.sort_order };
       if (filters.status) params.status = filters.status;
       if (filters.cliente_id) params.cliente_id = filters.cliente_id;
-      if (filters.vencidas) params.vencidas = 1;
-      if (filters.proximas_vencimento) {
+      if (filters.vencimento) {
         params.proximas_vencimento = 1;
-        params.dias = filters.dias;
+        params.dias = parseInt(filters.vencimento, 10);
       }
       const { data } = await api.get('/promissorias', { params });
       setPromissorias(data.data ?? []);
@@ -59,19 +57,17 @@ export default function PromissoriasList() {
   // Sincroniza filtros com a URL ao navegar (ex.: clique no dashboard)
   useEffect(() => {
     const status = searchParams.get('status');
-    const vencidas = searchParams.get('vencidas');
-    if (status !== null || vencidas !== null) {
+    if (status !== null) {
       setFilters((prev) => ({
         ...prev,
-        ...(status !== null && { status: status ?? '' }),
-        ...(vencidas !== null && { vencidas: vencidas === '1' }),
+        status: status ?? '',
       }));
     }
   }, [searchParams]);
 
   useEffect(() => {
     fetchPromissorias(1);
-  }, [filters.status, filters.cliente_id, filters.vencidas, filters.proximas_vencimento, filters.dias]);
+  }, [filters.status, filters.cliente_id, filters.vencimento, filters.sort_by, filters.sort_order]);
 
   const goToPage = (page) => {
     fetchPromissorias(page);
@@ -152,34 +148,42 @@ export default function PromissoriasList() {
             placeholder="Todos (buscar por nome)"
           />
         </div>
-        <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={filters.vencidas}
-            onChange={(e) => setFilters((f) => ({ ...f, vencidas: e.target.checked }))}
-          />
-          <span className="text-sm text-slate-700">Só vencidas</span>
-        </label>
-        <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={filters.proximas_vencimento}
-            onChange={(e) => setFilters((f) => ({ ...f, proximas_vencimento: e.target.checked }))}
-          />
-          <span className="text-sm text-slate-700">Próximas do vencimento</span>
-        </label>
-        {filters.proximas_vencimento && (
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-500">Dias</label>
-            <input
-              type="number"
-              min={1}
-              value={filters.dias}
-              onChange={(e) => setFilters((f) => ({ ...f, dias: parseInt(e.target.value, 10) || 3 }))}
-              className="w-16 rounded-lg border border-slate-300 px-2 py-2 text-sm"
-            />
-          </div>
-        )}
+        <div>
+          <label className="mb-1 block text-xs font-medium text-slate-500">Vencimento</label>
+          <select
+            value={filters.vencimento}
+            onChange={(e) => setFilters((f) => ({ ...f, vencimento: e.target.value }))}
+            className="min-w-[180px] rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          >
+            <option value="">Todos</option>
+            <option value="7">Próximos 7 dias</option>
+            <option value="15">Próximos 15 dias</option>
+            <option value="30">Próximos 30 dias</option>
+          </select>
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-slate-500">Ordenar por</label>
+          <select
+            value={filters.sort_by}
+            onChange={(e) => setFilters((f) => ({ ...f, sort_by: e.target.value }))}
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          >
+            <option value="cliente_nome">Cliente</option>
+            <option value="valor">Valor</option>
+            <option value="data_vencimento">Data de vencimento</option>
+          </select>
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-slate-500">Ordem</label>
+          <select
+            value={filters.sort_order}
+            onChange={(e) => setFilters((f) => ({ ...f, sort_order: e.target.value }))}
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          >
+            <option value="asc">A → Z / Crescente</option>
+            <option value="desc">Z → A / Decrescente</option>
+          </select>
+        </div>
       </div>
 
       {error && (
@@ -270,13 +274,61 @@ export default function PromissoriasList() {
           </div>
 
           {meta.last_page > 1 && (
-            <div className="mt-4 flex items-center justify-between">
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
               <p className="text-sm text-slate-600">
                 Página {meta.current_page} de {meta.last_page} ({meta.total} promissórias)
               </p>
-              <div className="flex gap-2">
-                <button type="button" disabled={meta.current_page <= 1} onClick={() => goToPage(meta.current_page - 1)} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm disabled:opacity-50 hover:bg-slate-50">Anterior</button>
-                <button type="button" disabled={meta.current_page >= meta.last_page} onClick={() => goToPage(meta.current_page + 1)} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm disabled:opacity-50 hover:bg-slate-50">Próxima</button>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  disabled={meta.current_page <= 1}
+                  onClick={() => goToPage(meta.current_page - 1)}
+                  className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm disabled:opacity-50 hover:bg-slate-50"
+                >
+                  Anterior
+                </button>
+                {(() => {
+                  const current = meta.current_page;
+                  const last = meta.last_page;
+                  const delta = 1;
+                  const pages = [];
+                  for (let i = 1; i <= last; i++) {
+                    if (i === 1 || i === last || (i >= current - delta && i <= current + delta)) {
+                      pages.push(i);
+                    }
+                  }
+                  const items = [];
+                  for (let i = 0; i < pages.length; i++) {
+                    if (i > 0 && pages[i] - pages[i - 1] > 1) items.push('ellipsis');
+                    items.push(pages[i]);
+                  }
+                  return items.map((item, i) =>
+                    item === 'ellipsis' ? (
+                      <span key={`e-${i}`} className="px-2 text-slate-400">…</span>
+                    ) : (
+                      <button
+                        key={item}
+                        type="button"
+                        onClick={() => goToPage(item)}
+                        className={`min-w-[2.25rem] rounded-lg border px-2 py-1.5 text-sm ${
+                          item === current
+                            ? 'border-blue-600 bg-blue-600 text-white'
+                            : 'border-slate-300 hover:bg-slate-50'
+                        }`}
+                      >
+                        {item}
+                      </button>
+                    )
+                  );
+                })()}
+                <button
+                  type="button"
+                  disabled={meta.current_page >= meta.last_page}
+                  onClick={() => goToPage(meta.current_page + 1)}
+                  className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm disabled:opacity-50 hover:bg-slate-50"
+                >
+                  Próxima
+                </button>
               </div>
             </div>
           )}

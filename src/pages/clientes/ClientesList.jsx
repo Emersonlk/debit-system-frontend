@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../lib/api';
 import { maskPhone } from '../../lib/masks';
+
+const DEBOUNCE_MS = 400;
 
 export default function ClientesList() {
   const [clientes, setClientes] = useState([]);
@@ -10,12 +12,18 @@ export default function ClientesList() {
   const [error, setError] = useState('');
   const [deletingId, setDeletingId] = useState(null);
   const [confirmId, setConfirmId] = useState(null);
+  const [sortBy, setSortBy] = useState('nome');
+  const [sortOrder, setSortOrder] = useState('asc');
+  const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
 
-  const fetchClientes = async (page = 1) => {
+  const fetchClientes = useCallback(async (page = 1) => {
     setLoading(true);
     setError('');
     try {
-      const { data } = await api.get('/clientes', { params: { per_page: 15, page } });
+      const params = { per_page: 15, page, sort_by: sortBy, sort_order: sortOrder };
+      if (search.trim()) params.search = search.trim();
+      const { data } = await api.get('/clientes', { params });
       setClientes(data.data ?? []);
       setMeta(data.meta ?? { current_page: 1, last_page: 1, per_page: 15, total: 0 });
     } catch (err) {
@@ -23,11 +31,18 @@ export default function ClientesList() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [sortBy, sortOrder, search]);
 
   useEffect(() => {
-    fetchClientes();
-  }, []);
+    const t = setTimeout(() => {
+      setSearch(searchInput);
+    }, DEBOUNCE_MS);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
+  useEffect(() => {
+    fetchClientes(1);
+  }, [fetchClientes]);
 
   const handleDelete = async (id) => {
     setDeletingId(id);
@@ -60,6 +75,42 @@ export default function ClientesList() {
         >
           Novo cliente
         </Link>
+      </div>
+
+      {/* Busca e ordenação */}
+      <div className="mb-4 flex flex-wrap items-end gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="min-w-[220px] flex-1">
+          <label className="mb-1 block text-xs font-medium text-slate-500">Buscar por nome</label>
+          <input
+            type="text"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Digite o nome do cliente..."
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-slate-500">Ordenar por</label>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          >
+            <option value="nome">Nome</option>
+            <option value="created_at">Data de cadastro</option>
+          </select>
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-slate-500">Ordem</label>
+          <select
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value)}
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          >
+            <option value="asc">A → Z / Crescente</option>
+            <option value="desc">Z → A / Decrescente</option>
+          </select>
+        </div>
       </div>
 
       {error && (
@@ -140,11 +191,11 @@ export default function ClientesList() {
           </div>
 
           {meta.last_page > 1 && (
-            <div className="mt-4 flex items-center justify-between">
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
               <p className="text-sm text-slate-600">
                 Página {meta.current_page} de {meta.last_page} ({meta.total} clientes)
               </p>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-1">
                 <button
                   type="button"
                   disabled={meta.current_page <= 1}
@@ -153,6 +204,40 @@ export default function ClientesList() {
                 >
                   Anterior
                 </button>
+                {(() => {
+                  const current = meta.current_page;
+                  const last = meta.last_page;
+                  const delta = 1;
+                  const pages = [];
+                  for (let i = 1; i <= last; i++) {
+                    if (i === 1 || i === last || (i >= current - delta && i <= current + delta)) {
+                      pages.push(i);
+                    }
+                  }
+                  const items = [];
+                  for (let i = 0; i < pages.length; i++) {
+                    if (i > 0 && pages[i] - pages[i - 1] > 1) items.push('ellipsis');
+                    items.push(pages[i]);
+                  }
+                  return items.map((item, i) =>
+                    item === 'ellipsis' ? (
+                      <span key={`e-${i}`} className="px-2 text-slate-400">…</span>
+                    ) : (
+                      <button
+                        key={item}
+                        type="button"
+                        onClick={() => fetchClientes(item)}
+                        className={`min-w-[2.25rem] rounded-lg border px-2 py-1.5 text-sm ${
+                          item === current
+                            ? 'border-blue-600 bg-blue-600 text-white'
+                            : 'border-slate-300 hover:bg-slate-50'
+                        }`}
+                      >
+                        {item}
+                      </button>
+                    )
+                  );
+                })()}
                 <button
                   type="button"
                   disabled={meta.current_page >= meta.last_page}
