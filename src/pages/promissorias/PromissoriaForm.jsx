@@ -9,13 +9,15 @@ export default function PromissoriaForm() {
   const isEdit = Boolean(id);
   const navigate = useNavigate();
   const [loading, setLoading] = useState(isEdit);
-  const [cliente_id, setClienteId] = useState('');
-  const [valor, setValor] = useState('');
-  const [data_vencimento, setDataVencimento] = useState('');
-  const [observacoes, setObservacoes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [errors, setErrors] = useState({});
+  const [formFields, setFormFields] = useState({
+    cliente_id: '',
+    valor: '',
+    data_vencimento: '',
+    observacoes: '',
+  });
 
   useEffect(() => {
     if (!isEdit) return;
@@ -23,12 +25,14 @@ export default function PromissoriaForm() {
       setLoading(true);
       setError('');
       try {
-        const { data } = await api.get(`/promissorias/${id}`);
-        const p = data.data;
-        setClienteId(String(p.cliente_id ?? ''));
-        setValor(p.valor != null ? maskMoney(moneyToInput(p.valor)) : '');
-        setDataVencimento(p.data_vencimento ? p.data_vencimento.slice(0, 10) : '');
-        setObservacoes(p.observacoes ?? '');
+        const { data: response } = await api.get(`/promissorias/${id}`);
+        const p = response.data;
+        setFormFields({
+          cliente_id: String(p.cliente_id ?? ''),
+          valor: p.valor != null ? maskMoney(moneyToInput(p.valor)) : '',
+          data_vencimento: p.data_vencimento ? p.data_vencimento.slice(0, 10) : '',
+          observacoes: p.observacoes ?? '',
+        });
       } catch (err) {
         setError(err.response?.data?.message ?? 'Promissória não encontrada.');
       } finally {
@@ -38,6 +42,12 @@ export default function PromissoriaForm() {
     fetchPromissoria();
   }, [id, isEdit]);
 
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    const val = name === 'valor' ? maskMoney(value) : value;
+    setFormFields((prev) => ({ ...prev, [name]: val }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -45,10 +55,10 @@ export default function PromissoriaForm() {
     setSubmitting(true);
     try {
       const payload = {
-        cliente_id: parseInt(cliente_id, 10),
-        valor: unmaskMoney(valor),
-        data_vencimento: data_vencimento,
-        observacoes: observacoes.trim() || null,
+        cliente_id: parseInt(formFields.cliente_id, 10),
+        valor: unmaskMoney(formFields.valor),
+        data_vencimento: formFields.data_vencimento,
+        observacoes: formFields.observacoes.trim() || null,
       };
       if (isEdit) {
         await api.put(`/promissorias/${id}`, payload);
@@ -91,8 +101,8 @@ export default function PromissoriaForm() {
         <div>
           <label htmlFor="cliente_search" className="mb-1 block text-sm font-medium text-slate-700">Cliente *</label>
           <ClienteSearchSelect
-            value={cliente_id}
-            onChange={setClienteId}
+            value={formFields.cliente_id}
+            onChange={(v) => setFormFields((prev) => ({ ...prev, cliente_id: v }))}
             placeholder="Digite o nome do cliente para buscar..."
             error={errors.cliente_id}
           />
@@ -101,10 +111,11 @@ export default function PromissoriaForm() {
           <label htmlFor="valor" className="mb-1 block text-sm font-medium text-slate-700">Valor (R$) *</label>
           <input
             id="valor"
+            name="valor"
             type="text"
             inputMode="numeric"
-            value={valor}
-            onChange={(e) => setValor(maskMoney(e.target.value))}
+            value={formFields.valor}
+            onChange={handleChange}
             required
             placeholder="R$ 0,00"
             className={inputClass('valor')}
@@ -115,9 +126,10 @@ export default function PromissoriaForm() {
           <label htmlFor="data_vencimento" className="mb-1 block text-sm font-medium text-slate-700">Data de vencimento *</label>
           <input
             id="data_vencimento"
+            name="data_vencimento"
             type="date"
-            value={data_vencimento}
-            onChange={(e) => setDataVencimento(e.target.value)}
+            value={formFields.data_vencimento}
+            onChange={handleChange}
             required
             min={isEdit ? undefined : new Date().toISOString().slice(0, 10)}
             className={inputClass('data_vencimento')}
@@ -128,8 +140,9 @@ export default function PromissoriaForm() {
           <label htmlFor="observacoes" className="mb-1 block text-sm font-medium text-slate-700">Observações</label>
           <textarea
             id="observacoes"
-            value={observacoes}
-            onChange={(e) => setObservacoes(e.target.value)}
+            name="observacoes"
+            value={formFields.observacoes}
+            onChange={handleChange}
             rows={3}
             maxLength={1000}
             className={inputClass('observacoes')}

@@ -3,8 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [formFields, setFormFields] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const { login } = useAuth();
@@ -12,12 +11,17 @@ export default function Login() {
   const location = useLocation();
   const from = location.state?.from?.pathname ?? '/';
 
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormFields((prev) => ({ ...prev, [name]: value }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSubmitting(true);
     try {
-      await login(email, password);
+      await login(formFields.email, formFields.password);
       navigate(from, { replace: true });
     } catch (err) {
       const msg = err.response?.data?.message ?? 'Erro ao fazer login. Verifique email e senha.';
@@ -45,9 +49,10 @@ export default function Login() {
             </label>
             <input
               id="email"
+              name="email"
               type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={formFields.email}
+              onChange={handleChange}
               required
               autoComplete="email"
               className="w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
@@ -59,9 +64,10 @@ export default function Login() {
             </label>
             <input
               id="password"
+              name="password"
               type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              value={formFields.password}
+              onChange={handleChange}
               required
               autoComplete="current-password"
               className="w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"

@@ -3,11 +3,19 @@ import api from '../../lib/api';
 import { maskMoney, unmaskMoney } from '../../lib/masks';
 
 export default function PagamentoParcialModal({ promissoriaId, onClose, onSuccess }) {
-  const [valor_pago, setValorPago] = useState('');
-  const [data_pagamento, setDataPagamento] = useState(new Date().toISOString().slice(0, 10));
-  const [observacoes, setObservacoes] = useState('');
+  const [formFields, setFormFields] = useState({
+    valor_pago: '',
+    data_pagamento: new Date().toISOString().slice(0, 10),
+    observacoes: '',
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    const val = name === 'valor_pago' ? maskMoney(value) : value;
+    setFormFields((prev) => ({ ...prev, [name]: val }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -15,9 +23,9 @@ export default function PagamentoParcialModal({ promissoriaId, onClose, onSucces
     setError('');
     try {
       await api.post(`/promissorias/${promissoriaId}/pagamento-parcial`, {
-        valor_pago: unmaskMoney(valor_pago),
-        data_pagamento,
-        observacoes: observacoes.trim() || null,
+        valor_pago: unmaskMoney(formFields.valor_pago),
+        data_pagamento: formFields.data_pagamento,
+        observacoes: formFields.observacoes.trim() || null,
       });
       onSuccess();
     } catch (err) {
@@ -36,10 +44,11 @@ export default function PagamentoParcialModal({ promissoriaId, onClose, onSucces
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-700">Valor pago *</label>
             <input
+              name="valor_pago"
               type="text"
               inputMode="numeric"
-              value={valor_pago}
-              onChange={(e) => setValorPago(maskMoney(e.target.value))}
+              value={formFields.valor_pago}
+              onChange={handleChange}
               required
               placeholder="R$ 0,00"
               className="w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
@@ -48,9 +57,10 @@ export default function PagamentoParcialModal({ promissoriaId, onClose, onSucces
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-700">Data do pagamento *</label>
             <input
+              name="data_pagamento"
               type="date"
-              value={data_pagamento}
-              onChange={(e) => setDataPagamento(e.target.value)}
+              value={formFields.data_pagamento}
+              onChange={handleChange}
               required
               className="w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
             />
@@ -58,8 +68,9 @@ export default function PagamentoParcialModal({ promissoriaId, onClose, onSucces
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-700">Observações</label>
             <textarea
-              value={observacoes}
-              onChange={(e) => setObservacoes(e.target.value)}
+              name="observacoes"
+              value={formFields.observacoes}
+              onChange={handleChange}
               rows={2}
               maxLength={1000}
               className="w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"

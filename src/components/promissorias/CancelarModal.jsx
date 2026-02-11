@@ -2,9 +2,14 @@ import { useState } from 'react';
 import api from '../../lib/api';
 
 export default function CancelarModal({ promissoriaId, onClose, onSuccess }) {
-  const [observacoes, setObservacoes] = useState('');
+  const [formFields, setFormFields] = useState({ observacoes: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormFields((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -12,7 +17,7 @@ export default function CancelarModal({ promissoriaId, onClose, onSuccess }) {
     setError('');
     try {
       await api.post(`/promissorias/${promissoriaId}/cancelar`, {
-        observacoes: observacoes.trim() || null,
+        observacoes: formFields.observacoes.trim() || null,
       });
       onSuccess();
     } catch (err) {
@@ -32,8 +37,9 @@ export default function CancelarModal({ promissoriaId, onClose, onSuccess }) {
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-700">Observações</label>
             <textarea
-              value={observacoes}
-              onChange={(e) => setObservacoes(e.target.value)}
+              name="observacoes"
+              value={formFields.observacoes}
+              onChange={handleChange}
               rows={3}
               maxLength={1000}
               className="w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import api from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import ClienteSearchSelect from '../../components/ClienteSearchSelect';
@@ -22,7 +22,12 @@ export default function PromissoriasList() {
   const [meta, setMeta] = useState({ current_page: 1, last_page: 1, per_page: 15, total: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [filters, setFilters] = useState({ status: '', cliente_id: '', vencidas: false, proximas_vencimento: false, dias: 3 });
+  const [searchParams] = useSearchParams();
+  const [filters, setFilters] = useState(() => {
+    const status = searchParams.get('status') ?? '';
+    const vencidas = searchParams.get('vencidas') === '1';
+    return { status, cliente_id: '', vencidas, proximas_vencimento: false, dias: 3 };
+  });
   const [deletingId, setDeletingId] = useState(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [marcarPagaId, setMarcarPagaId] = useState(null);
@@ -50,6 +55,19 @@ export default function PromissoriasList() {
       setLoading(false);
     }
   };
+
+  // Sincroniza filtros com a URL ao navegar (ex.: clique no dashboard)
+  useEffect(() => {
+    const status = searchParams.get('status');
+    const vencidas = searchParams.get('vencidas');
+    if (status !== null || vencidas !== null) {
+      setFilters((prev) => ({
+        ...prev,
+        ...(status !== null && { status: status ?? '' }),
+        ...(vencidas !== null && { vencidas: vencidas === '1' }),
+      }));
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     fetchPromissorias(1);
