@@ -17,7 +17,7 @@ import {
 } from 'recharts';
 import { useAuth } from '../contexts/AuthContext';
 import DashboardSkeleton from '../components/DashboardSkeleton';
-import { fetchDashboardRaw, computeDashboardData, PERIODS } from '../lib/dashboardData';
+import { fetchDashboard, mapDashboardResponse, PERIODS } from '../lib/dashboardData';
 
 const formatMoney = (v) => {
   if (v == null) return 'R$ 0,00';
@@ -45,31 +45,30 @@ export default function Dashboard() {
   const [customEnd, setCustomEnd] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [raw, setRaw] = useState({ promissorias: [], totalClientes: 0 });
   const [computed, setComputed] = useState(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      const data = await fetchDashboardRaw();
-      setRaw(data);
+      const apiData = await fetchDashboard(
+        period,
+        period === 'personalizado' ? customStart : '',
+        period === 'personalizado' ? customEnd : '',
+        3
+      );
+      setComputed(mapDashboardResponse(apiData));
     } catch (err) {
       setError(err.response?.data?.message ?? 'Erro ao carregar dados do dashboard.');
+      setComputed(null);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [period, customStart, customEnd]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
-
-  useEffect(() => {
-    setComputed(
-      computeDashboardData(raw.promissorias, raw.totalClientes, period, customStart || undefined, customEnd || undefined)
-    );
-  }, [raw, period, customStart, customEnd]);
 
   const isCustom = period === 'personalizado';
   const chartData = computed?.recebimentosSerie?.length
@@ -348,11 +347,11 @@ export default function Dashboard() {
                         <tr key={p.id} className="hover:bg-slate-50">
                           <td className="px-4 py-2 text-sm text-slate-800">
                             <Link to={`/promissorias/${p.id}`} className="hover:underline">
-                              {p.cliente?.nome ?? `#${p.cliente_id}`}
+                              {typeof p.cliente === 'object' ? p.cliente?.nome : p.cliente ?? `#${p.cliente_id}`}
                             </Link>
                           </td>
                           <td className="px-4 py-2 text-right text-sm font-medium text-slate-800">
-                            {formatMoney(p.valor_original_total ?? p.valor)}
+                            {formatMoney(p.saldo_restante ?? p.valor_original_total ?? p.valor)}
                           </td>
                           <td className="px-4 py-2 text-right text-xs text-slate-500">
                             {formatDate(p.data_vencimento)}
@@ -384,7 +383,7 @@ export default function Dashboard() {
                         <tr key={p.id} className="hover:bg-slate-50">
                           <td className="px-4 py-2 text-sm text-slate-800">
                             <Link to={`/promissorias/${p.id}`} className="hover:underline">
-                              {p.cliente?.nome ?? `#${p.cliente_id}`}
+                              {typeof p.cliente === 'object' ? p.cliente?.nome : p.cliente ?? `#${p.cliente_id}`}
                             </Link>
                           </td>
                           <td className="px-4 py-2 text-right text-sm font-medium text-red-700">
@@ -417,7 +416,7 @@ export default function Dashboard() {
                         <tr key={p.id} className="hover:bg-slate-50">
                           <td className="px-4 py-2 text-sm text-slate-800">
                             <Link to={`/promissorias/${p.id}`} className="hover:underline">
-                              {p.cliente?.nome ?? `#${p.cliente_id}`}
+                              {typeof p.cliente === 'object' ? p.cliente?.nome : p.cliente ?? `#${p.cliente_id}`}
                             </Link>
                           </td>
                           <td className="px-4 py-2 text-right text-sm font-medium text-emerald-700">

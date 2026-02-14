@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../lib/api';
 import { maskPhone } from '../../lib/masks';
+import TableSkeleton from '../../components/TableSkeleton';
 
 const DEBOUNCE_MS = 400;
 
@@ -16,17 +17,22 @@ export default function ClientesList() {
   const [sortOrder, setSortOrder] = useState('asc');
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
+  const abortRef = useRef(null);
 
   const fetchClientes = useCallback(async (page = 1) => {
+    abortRef.current?.abort();
+    abortRef.current = new AbortController();
+    const signal = abortRef.current.signal;
     setLoading(true);
     setError('');
     try {
       const params = { per_page: 15, page, sort_by: sortBy, sort_order: sortOrder };
       if (search.trim()) params.search = search.trim();
-      const { data } = await api.get('/clientes', { params });
+      const { data } = await api.get('/clientes', { params, signal });
       setClientes(data.data ?? []);
       setMeta(data.meta ?? { current_page: 1, last_page: 1, per_page: 15, total: 0 });
     } catch (err) {
+      if (err.code === 'ERR_CANCELED') return;
       setError(err.response?.data?.message ?? 'Erro ao carregar clientes.');
     } finally {
       setLoading(false);
@@ -119,11 +125,17 @@ export default function ClientesList() {
         </div>
       )}
 
-      {loading ? (
-        <p className="text-slate-600">Carregando...</p>
+      {loading && clientes.length === 0 ? (
+        <TableSkeleton columns={5} rows={10} />
       ) : (
         <>
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+          {loading && clientes.length > 0 && (
+            <div className="mb-2 flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+              <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600" />
+              Atualizando...
+            </div>
+          )}
+          <div className={`overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm ${loading && clientes.length > 0 ? 'opacity-75' : ''}`}>
             <table className="min-w-full divide-y divide-slate-200">
               <thead className="bg-slate-50">
                 <tr>

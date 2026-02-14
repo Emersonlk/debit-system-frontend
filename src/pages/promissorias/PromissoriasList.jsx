@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import api from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import ClienteSearchSelect from '../../components/ClienteSearchSelect';
+import TableSkeleton from '../../components/TableSkeleton';
 import MarcarComoPagaModal from '../../components/promissorias/MarcarComoPagaModal';
 import PagamentoParcialModal from '../../components/promissorias/PagamentoParcialModal';
 import CancelarModal from '../../components/promissorias/CancelarModal';
@@ -32,8 +33,12 @@ export default function PromissoriasList() {
   const [marcarPagaId, setMarcarPagaId] = useState(null);
   const [pagamentoParcialId, setPagamentoParcialId] = useState(null);
   const [cancelarId, setCancelarId] = useState(null);
+  const abortRef = useRef(null);
 
-  const fetchPromissorias = async (page = 1) => {
+  const fetchPromissorias = useCallback(async (page = 1) => {
+    abortRef.current?.abort();
+    abortRef.current = new AbortController();
+    const signal = abortRef.current.signal;
     setLoading(true);
     setError('');
     try {
@@ -44,15 +49,16 @@ export default function PromissoriasList() {
         params.proximas_vencimento = 1;
         params.dias = parseInt(filters.vencimento, 10);
       }
-      const { data } = await api.get('/promissorias', { params });
+      const { data } = await api.get('/promissorias', { params, signal });
       setPromissorias(data.data ?? []);
       setMeta(data.meta ?? { current_page: 1, last_page: 1, per_page: 15, total: 0 });
     } catch (err) {
+      if (err.code === 'ERR_CANCELED') return;
       setError(err.response?.data?.message ?? 'Erro ao carregar promissórias.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters.status, filters.cliente_id, filters.vencimento, filters.sort_by, filters.sort_order]);
 
   // Sincroniza filtros com a URL ao navegar (ex.: clique no dashboard)
   useEffect(() => {
@@ -67,7 +73,7 @@ export default function PromissoriasList() {
 
   useEffect(() => {
     fetchPromissorias(1);
-  }, [filters.status, filters.cliente_id, filters.vencimento, filters.sort_by, filters.sort_order]);
+  }, [fetchPromissorias]);
 
   const goToPage = (page) => {
     fetchPromissorias(page);
@@ -190,11 +196,17 @@ export default function PromissoriasList() {
         <div className="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</div>
       )}
 
-      {loading ? (
-        <p className="text-slate-600">Carregando...</p>
+      {loading && promissorias.length === 0 ? (
+        <TableSkeleton columns={5} rows={10} />
       ) : (
         <>
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+          {loading && promissorias.length > 0 && (
+            <div className="mb-2 flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+              <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600" />
+              Atualizando...
+            </div>
+          )}
+          <div className={`overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm ${loading && promissorias.length > 0 ? 'opacity-75' : ''}`}>
             <table className="min-w-full divide-y divide-slate-200">
               <thead className="bg-slate-50">
                 <tr>
