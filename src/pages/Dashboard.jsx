@@ -440,22 +440,7 @@ export default function Dashboard() {
           </section>
         </>
       )}
-
-      {/* Links rápidos (opcional) */}
-      <div className="flex flex-wrap gap-4 border-t border-slate-200 pt-4">
-        <Link
-          to="/clientes"
-          className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
-        >
-          Ver clientes
-        </Link>
-        <Link
-          to="/promissorias"
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-        >
-          Ver promissórias
-        </Link>
-      </div>
+      
     </div>
   );
 }

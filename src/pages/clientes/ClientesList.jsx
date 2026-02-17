@@ -73,11 +73,11 @@ export default function ClientesList() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold text-slate-800">Clientes</h1>
         <Link
           to="/clientes/novo"
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
         >
           Novo cliente
         </Link>
@@ -135,7 +135,64 @@ export default function ClientesList() {
               Atualizando...
             </div>
           )}
-          <div className={`overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm ${loading && clientes.length > 0 ? 'opacity-75' : ''}`}>
+          {/* Lista em cards para mobile */}
+          <div className={`block md:hidden space-y-3 ${loading && clientes.length > 0 ? 'opacity-75' : ''}`}>
+            {clientes.length === 0 ? (
+              <div className="rounded-xl border border-slate-200 bg-white px-4 py-8 text-center text-slate-500 shadow-sm">
+                Nenhum cliente cadastrado.
+              </div>
+            ) : (
+              clientes.map((c) => (
+                <div key={c.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <div className="flex flex-col gap-1">
+                    <span className="font-medium text-slate-800">{c.nome}</span>
+                    <span className="text-sm text-slate-600">CPF: {formatCpf(c.cpf)}</span>
+                    <span className="text-sm text-slate-600">E-mail: {c.email ?? '-'}</span>
+                    <span className="text-sm text-slate-600">Tel: {c.telefone ? maskPhone(c.telefone) : '-'}</span>
+                  </div>
+                  {confirmId === c.id ? (
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <span className="text-sm text-slate-600">Excluir este cliente?</span>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(c.id)}
+                        disabled={deletingId === c.id}
+                        className="min-h-[44px] rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+                      >
+                        {deletingId === c.id ? 'Excluindo...' : 'Confirmar'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmId(null)}
+                        className="min-h-[44px] rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="mt-4 flex flex-wrap items-center gap-2">
+                      <Link
+                        to={`/clientes/${c.id}/editar`}
+                        className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white"
+                      >
+                        Editar
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmId(c.id)}
+                        className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-600"
+                      >
+                        Excluir
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Tabela para desktop */}
+          <div className={`hidden md:block overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm ${loading && clientes.length > 0 ? 'opacity-75' : ''}`}>
             <table className="min-w-full divide-y divide-slate-200">
               <thead className="bg-slate-50">
                 <tr>

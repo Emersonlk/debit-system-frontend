@@ -7,6 +7,7 @@ import TableSkeleton from '../../components/TableSkeleton';
 import MarcarComoPagaModal from '../../components/promissorias/MarcarComoPagaModal';
 import PagamentoParcialModal from '../../components/promissorias/PagamentoParcialModal';
 import CancelarModal from '../../components/promissorias/CancelarModal';
+import ActionsMenu, { ActionsMenuItem } from '../../components/ActionsMenu';
 
 const STATUS_LABELS = {
   pendente: 'Pendente',
@@ -121,11 +122,11 @@ export default function PromissoriasList() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold text-slate-800">Promissórias</h1>
         <Link
           to="/promissorias/novo"
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
         >
           Nova promissória
         </Link>
@@ -146,7 +147,7 @@ export default function PromissoriasList() {
             ))}
           </select>
         </div>
-        <div className="min-w-[200px]">
+        <div className="min-w-0 flex-1 basis-[200px]">
           <label className="mb-1 block text-xs font-medium text-slate-500">Cliente</label>
           <ClienteSearchSelect
             value={filters.cliente_id}
@@ -206,7 +207,99 @@ export default function PromissoriasList() {
               Atualizando...
             </div>
           )}
-          <div className={`overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm ${loading && promissorias.length > 0 ? 'opacity-75' : ''}`}>
+          {/* Lista em cards para mobile */}
+          <div className={`block md:hidden space-y-3 ${loading && promissorias.length > 0 ? 'opacity-75' : ''}`}>
+            {promissorias.length === 0 ? (
+              <div className="rounded-xl border border-slate-200 bg-white px-4 py-8 text-center text-slate-500 shadow-sm">
+                Nenhuma promissória encontrada.
+              </div>
+            ) : (
+              promissorias.map((p) => (
+                <div key={p.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <Link to={`/promissorias/${p.id}`} className="block">
+                    <span className="font-medium text-slate-800">{p.cliente ? p.cliente.nome : `#${p.cliente_id}`}</span>
+                  </Link>
+                  <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0 text-sm text-slate-600">
+                    <span>R$ {formatMoney(p.valor_original_total ?? p.valor)}</span>
+                    <span>Venc: {formatDate(p.data_vencimento)}</span>
+                    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                      p.status === 'paga' ? 'bg-green-100 text-green-800' :
+                      p.status === 'cancelada' ? 'bg-slate-100 text-slate-700' :
+                      p.status === 'vencida' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'
+                    }`}>
+                      {STATUS_LABELS[p.status] ?? p.status}
+                    </span>
+                  </div>
+                  {confirmDeleteId === p.id ? (
+                    <div className="mt-4 flex flex-wrap items-center gap-2">
+                      <span className="text-sm text-slate-600">Excluir esta promissória?</span>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(p.id)}
+                        disabled={deletingId === p.id}
+                        className="min-h-[44px] rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+                      >
+                        {deletingId === p.id ? 'Excluindo...' : 'Confirmar'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDeleteId(null)}
+                        className="min-h-[44px] rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="mt-4 flex flex-wrap items-center gap-2">
+                      <Link
+                        to={`/promissorias/${p.id}`}
+                        className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700"
+                      >
+                        Ver
+                      </Link>
+                      <Link
+                        to={`/promissorias/${p.id}/editar`}
+                        className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white"
+                      >
+                        Editar
+                      </Link>
+                      <ActionsMenu label="Mais ações">
+                        <ActionsMenuItem as={Link} to={`/promissorias/${p.id}`}>
+                          Ver
+                        </ActionsMenuItem>
+                        <ActionsMenuItem as={Link} to={`/promissorias/${p.id}/editar`}>
+                          Editar
+                        </ActionsMenuItem>
+                        {canMarcarPaga(p) && (
+                          <ActionsMenuItem as="button" type="button" onClick={() => setMarcarPagaId(p.id)} className="text-green-700">
+                            Marcar paga
+                          </ActionsMenuItem>
+                        )}
+                        {canPagamentoParcial(p) && (
+                          <ActionsMenuItem as="button" type="button" onClick={() => setPagamentoParcialId(p.id)}>
+                            Pag. parcial
+                          </ActionsMenuItem>
+                        )}
+                        {canCancelar(p) && (
+                          <ActionsMenuItem as="button" type="button" onClick={() => setCancelarId(p.id)} className="text-amber-700">
+                            Cancelar
+                          </ActionsMenuItem>
+                        )}
+                        {canDelete && (
+                          <ActionsMenuItem as="button" type="button" onClick={() => setConfirmDeleteId(p.id)} className="text-red-600">
+                            Excluir
+                          </ActionsMenuItem>
+                        )}
+                      </ActionsMenu>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Tabela para desktop */}
+          <div className={`hidden md:block overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm ${loading && promissorias.length > 0 ? 'opacity-75' : ''}`}>
             <table className="min-w-full divide-y divide-slate-200">
               <thead className="bg-slate-50">
                 <tr>
