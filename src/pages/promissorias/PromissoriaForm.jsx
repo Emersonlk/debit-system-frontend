@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import api from '../../lib/api';
 import ClienteSearchSelect from '../../components/ClienteSearchSelect';
+import ImportarFotoPromissoria from '../../components/promissorias/ImportarFotoPromissoria';
 import { maskMoney, unmaskMoney, moneyToInput } from '../../lib/masks';
 
 export default function PromissoriaForm() {
@@ -96,6 +97,28 @@ export default function PromissoriaForm() {
       </div>
 
       {error && <div className="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</div>}
+
+      {!isEdit && (
+        <div className="mb-6 max-w-2xl">
+          <ImportarFotoPromissoria
+            onImportSuccess={() => navigate('/promissorias')}
+            onExtractedData={(dados) => {
+              const valorStr = dados.valor != null ? maskMoney(moneyToInput(dados.valor)) : '';
+              const dataVenc = dados.data_vencimento ? String(dados.data_vencimento).slice(0, 10) : '';
+              const cands = dados.clientes_candidatos ?? [];
+              const clienteId = cands.length === 1 ? String(cands[0].id) : cands.length > 0 ? String(cands[0].id) : '';
+              setFormFields((prev) => ({
+                ...prev,
+                cliente_id: clienteId,
+                valor: valorStr,
+                data_vencimento: dataVenc,
+                observacoes: prev.observacoes || (dados.nome_cliente ? `Importado de imagem - Cliente: ${dados.nome_cliente}` : ''),
+              }));
+            }}
+            disabled={submitting}
+          />
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="max-w-2xl space-y-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <div>
