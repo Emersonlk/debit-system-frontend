@@ -97,24 +97,24 @@ export default function ClienteSearchSelect({ value, onChange, placeholder = 'Bu
     setOpen(false);
   };
 
-  const inputClass = `w-full rounded-lg border px-3 py-2 pr-20 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none ${
+  const inputClass = `w-full rounded-lg border px-3 py-2.5 pr-20 min-h-[44px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none ${
     error ? 'border-red-400' : 'border-slate-300'
   }`;
 
   return (
     <div ref={containerRef} className="relative">
       {value && !selectedCliente && loadingCliente ? (
-        <div className="flex items-center rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-500">
+        <div className="flex items-center rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 min-h-[44px] text-sm text-slate-500">
           Carregando...
         </div>
       ) : selectedCliente ? (
-        <div className="flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2">
+        <div className="flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2.5 min-h-[44px]">
           <span className="flex-1 text-slate-800">{selectedCliente.nome}</span>
           <button
             type="button"
             onClick={handleClear}
             disabled={disabled}
-            className="text-slate-400 hover:text-slate-600 disabled:opacity-50"
+            className="min-h-[32px] min-w-[32px] flex items-center justify-center text-slate-400 hover:text-slate-600 disabled:opacity-50"
             title="Limpar"
           >
             ✕

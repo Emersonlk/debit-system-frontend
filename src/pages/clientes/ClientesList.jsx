@@ -17,6 +17,7 @@ export default function ClientesList() {
   const [sortOrder, setSortOrder] = useState('asc');
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const abortRef = useRef(null);
 
   const fetchClientes = useCallback(async (page = 1) => {
@@ -84,38 +85,60 @@ export default function ClientesList() {
       </div>
 
       {/* Busca e ordenação */}
-      <div className="mb-4 flex flex-wrap items-end gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="min-w-[220px] flex-1">
-          <label className="mb-1 block text-xs font-medium text-slate-500">Buscar por nome</label>
-          <input
-            type="text"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Digite o nome do cliente..."
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-xs font-medium text-slate-500">Ordenar por</label>
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+      <div className="mb-4 rounded-xl border border-slate-200 bg-white shadow-sm">
+        {/* Botão para expandir/colapsar no mobile */}
+        <button
+          type="button"
+          onClick={() => setFiltersOpen(!filtersOpen)}
+          className="md:hidden w-full flex items-center justify-between px-4 py-3 text-left text-sm font-medium text-slate-700 hover:bg-slate-50"
+        >
+          <span>Buscar e ordenar</span>
+          <svg
+            className={`w-5 h-5 transition-transform ${filtersOpen ? 'rotate-180' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
           >
-            <option value="nome">Nome</option>
-            <option value="created_at">Data de cadastro</option>
-          </select>
-        </div>
-        <div>
-          <label className="mb-1 block text-xs font-medium text-slate-500">Ordem</label>
-          <select
-            value={sortOrder}
-            onChange={(e) => setSortOrder(e.target.value)}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          >
-            <option value="asc">A → Z / Crescente</option>
-            <option value="desc">Z → A / Decrescente</option>
-          </select>
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        
+        {/* Conteúdo dos filtros */}
+        <div className={`${filtersOpen ? 'block' : 'hidden'} md:block p-4`}>
+          <div className="flex flex-col md:flex-row md:flex-wrap md:items-end gap-4">
+            <div className="w-full md:min-w-[220px] md:flex-1">
+              <label className="mb-1 block text-xs font-medium text-slate-500">Buscar por nome</label>
+              <input
+                type="text"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="Digite o nome do cliente..."
+                className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 min-h-[44px]"
+              />
+            </div>
+            <div className="w-full md:w-auto">
+              <label className="mb-1 block text-xs font-medium text-slate-500">Ordenar por</label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="w-full md:w-auto rounded-lg border border-slate-300 px-3 py-2.5 text-sm min-h-[44px]"
+              >
+                <option value="nome">Nome</option>
+                <option value="created_at">Data de cadastro</option>
+              </select>
+            </div>
+            <div className="w-full md:w-auto">
+              <label className="mb-1 block text-xs font-medium text-slate-500">Ordem</label>
+              <select
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value)}
+                className="w-full md:w-auto rounded-lg border border-slate-300 px-3 py-2.5 text-sm min-h-[44px]"
+              >
+                <option value="asc">A → Z / Crescente</option>
+                <option value="desc">Z → A / Decrescente</option>
+              </select>
+            </div>
+          </div>
         </div>
       </div>
 

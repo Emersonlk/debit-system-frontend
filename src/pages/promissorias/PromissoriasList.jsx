@@ -34,6 +34,7 @@ export default function PromissoriasList() {
   const [marcarPagaId, setMarcarPagaId] = useState(null);
   const [pagamentoParcialId, setPagamentoParcialId] = useState(null);
   const [cancelarId, setCancelarId] = useState(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const abortRef = useRef(null);
 
   const fetchPromissorias = useCallback(async (page = 1) => {
@@ -133,63 +134,85 @@ export default function PromissoriasList() {
       </div>
 
       {/* Filtros */}
-      <div className="mb-4 flex flex-wrap items-end gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div>
-          <label className="mb-1 block text-xs font-medium text-slate-500">Status</label>
-          <select
-            value={filters.status}
-            onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+      <div className="mb-4 rounded-xl border border-slate-200 bg-white shadow-sm">
+        {/* Botão para expandir/colapsar no mobile */}
+        <button
+          type="button"
+          onClick={() => setFiltersOpen(!filtersOpen)}
+          className="md:hidden w-full flex items-center justify-between px-4 py-3 text-left text-sm font-medium text-slate-700 hover:bg-slate-50"
+        >
+          <span>Filtros e ordenação</span>
+          <svg
+            className={`w-5 h-5 transition-transform ${filtersOpen ? 'rotate-180' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
           >
-            <option value="">Todos</option>
-            {Object.entries(STATUS_LABELS).map(([k, v]) => (
-              <option key={k} value={k}>{v}</option>
-            ))}
-          </select>
-        </div>
-        <div className="min-w-0 flex-1 basis-[200px]">
-          <label className="mb-1 block text-xs font-medium text-slate-500">Cliente</label>
-          <ClienteSearchSelect
-            value={filters.cliente_id}
-            onChange={(id) => setFilters((f) => ({ ...f, cliente_id: id }))}
-            placeholder="Todos (buscar por nome)"
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-xs font-medium text-slate-500">Vencimento</label>
-          <select
-            value={filters.vencimento}
-            onChange={(e) => setFilters((f) => ({ ...f, vencimento: e.target.value }))}
-            className="min-w-[180px] rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          >
-            <option value="">Todos</option>
-            <option value="7">Próximos 7 dias</option>
-            <option value="15">Próximos 15 dias</option>
-            <option value="30">Próximos 30 dias</option>
-          </select>
-        </div>
-        <div>
-          <label className="mb-1 block text-xs font-medium text-slate-500">Ordenar por</label>
-          <select
-            value={filters.sort_by}
-            onChange={(e) => setFilters((f) => ({ ...f, sort_by: e.target.value }))}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          >
-            <option value="cliente_nome">Cliente</option>
-            <option value="valor">Valor</option>
-            <option value="data_vencimento">Data de vencimento</option>
-          </select>
-        </div>
-        <div>
-          <label className="mb-1 block text-xs font-medium text-slate-500">Ordem</label>
-          <select
-            value={filters.sort_order}
-            onChange={(e) => setFilters((f) => ({ ...f, sort_order: e.target.value }))}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          >
-            <option value="asc">A → Z / Crescente</option>
-            <option value="desc">Z → A / Decrescente</option>
-          </select>
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        
+        {/* Conteúdo dos filtros */}
+        <div className={`${filtersOpen ? 'block' : 'hidden'} md:block p-4`}>
+          <div className="flex flex-col md:flex-row md:flex-wrap md:items-end gap-4">
+            <div className="w-full md:w-auto">
+              <label className="mb-1 block text-xs font-medium text-slate-500">Status</label>
+              <select
+                value={filters.status}
+                onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}
+                className="w-full md:w-auto rounded-lg border border-slate-300 px-3 py-2.5 text-sm min-h-[44px]"
+              >
+                <option value="">Todos</option>
+                {Object.entries(STATUS_LABELS).map(([k, v]) => (
+                  <option key={k} value={k}>{v}</option>
+                ))}
+              </select>
+            </div>
+            <div className="w-full md:min-w-0 md:flex-1 md:basis-[200px]">
+              <label className="mb-1 block text-xs font-medium text-slate-500">Cliente</label>
+              <ClienteSearchSelect
+                value={filters.cliente_id}
+                onChange={(id) => setFilters((f) => ({ ...f, cliente_id: id }))}
+                placeholder="Todos (buscar por nome)"
+              />
+            </div>
+            <div className="w-full md:w-auto">
+              <label className="mb-1 block text-xs font-medium text-slate-500">Vencimento</label>
+              <select
+                value={filters.vencimento}
+                onChange={(e) => setFilters((f) => ({ ...f, vencimento: e.target.value }))}
+                className="w-full md:min-w-[180px] rounded-lg border border-slate-300 px-3 py-2.5 text-sm min-h-[44px]"
+              >
+                <option value="">Todos</option>
+                <option value="7">Próximos 7 dias</option>
+                <option value="15">Próximos 15 dias</option>
+                <option value="30">Próximos 30 dias</option>
+              </select>
+            </div>
+            <div className="w-full md:w-auto">
+              <label className="mb-1 block text-xs font-medium text-slate-500">Ordenar por</label>
+              <select
+                value={filters.sort_by}
+                onChange={(e) => setFilters((f) => ({ ...f, sort_by: e.target.value }))}
+                className="w-full md:w-auto rounded-lg border border-slate-300 px-3 py-2.5 text-sm min-h-[44px]"
+              >
+                <option value="cliente_nome">Cliente</option>
+                <option value="valor">Valor</option>
+                <option value="data_vencimento">Data de vencimento</option>
+              </select>
+            </div>
+            <div className="w-full md:w-auto">
+              <label className="mb-1 block text-xs font-medium text-slate-500">Ordem</label>
+              <select
+                value={filters.sort_order}
+                onChange={(e) => setFilters((f) => ({ ...f, sort_order: e.target.value }))}
+                className="w-full md:w-auto rounded-lg border border-slate-300 px-3 py-2.5 text-sm min-h-[44px]"
+              >
+                <option value="asc">A → Z / Crescente</option>
+                <option value="desc">Z → A / Decrescente</option>
+              </select>
+            </div>
+          </div>
         </div>
       </div>
 
